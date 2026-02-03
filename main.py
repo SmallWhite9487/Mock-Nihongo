@@ -71,34 +71,36 @@ def ask_ai(details):
     '''
     Ask AI a question and stream the response
     '''
-    CLIENT = OpenAI(api_key="",
-                    base_url="")
+    CLIENT = OpenAI(api_key=API_KEYS[0],
+                    base_url=API_KEYS[1])
     
     exam, difficulty = details
-    question = f"請編寫一套包含完整的日語考試-{exam}的模擬題，難度相當於{exam}的{difficulty}級/分，內容涵蓋該考試的全部內容以及所有題目，例如JPT有200題就生成200道。請提供每個問題的問題、選項、以及正確答案，請按照以下格式返回內容：'<問題>/<問題内容>/<選項A>/<選項B>/<選項C>/<選項D>/<正確答案>/<備註(如有必要)>', '<問題>/<問題内容>/<選項A>/<選項B>/<選項C>/<選項D>/<正確答案>/<備註(如有必要)>'，例如：'<下の___線の言葉の正しい表現、または同じ意味のはたらきをしている言葉を (A)から(D)の中で一つ選びなさい。>/<私の母は、画家です。>/<がけ>/<がか>/<かくけ>/<かくいえ>/<B>/', ......，並且每個問題之間請用, 分隔開來。請確保問題的多樣性、覆蓋範圍以及不重複，以便全面評估考生的日語能力。"
-    question = "你好"
-
-    print(question, exam, difficulty, details, API_KEYS)
+    question = f"請編寫一套包含完整的日語考試-{exam}的模擬題，難度相當於{exam}的{difficulty}級/分，內容涵蓋該考試的全部內容，每個部分生成2道題目。請提供每個問題的問題、選項、以及正確答案，請按照以下格式返回內容：[<問題>/<問題内容>/<選項A>/<選項B>/<選項C>/<選項D>/<正確答案>/<備註(如有必要)>]|[<問題>/<問題内容>/<選項A>/<選項B>/<選項C>/<選項D>/<正確答案>/<備註(如有必要)>]，例如：[下の___線の言葉の正しい表現、または同じ意味のはたらきをしている言葉を (A)から(D)の中で一つ選びなさい。/私の母は、画家です。/がけ/がか/かくけ/かくいえ/B/......]。請確保問題的多樣性、覆蓋範圍以及不重複，以便全面評估考生的日語能力。"
 
     completion = CLIENT.chat.completions.create(
-        model="",
+        model=API_KEYS[2],
         messages=[{"role":"user","content":question}],
         temperature=1,
         top_p=0.95,
         max_tokens=8192,
-        extra_body={"chat_template_kwargs": {"thinking":True}},
-        stream=True
-    )
+        stream=True)
 
+    result_text = ""
     for chunk in completion:
         if not getattr(chunk, "choices", None):
             continue
-        reasoning = getattr(chunk.choices[0].delta, "reasoning_content", None)
-        if reasoning:
-            print(reasoning, end="", flush=True)
         if chunk.choices and chunk.choices[0].delta.content is not None:
-            print(chunk.choices[0].delta.content, end="", flush=True)
+            result_text += chunk.choices[0].delta.content
+    return result_text
 
+def parse_questions(raw_text):
+    questions = raw_text.split("]|[")
+    result = []
+    for q in questions:
+        q = q.strip("[]")
+        parts = q.split("/")
+        result.append(parts)
+    return result
 
 ################################################################################################################################################
 ################################################################################################################################################
@@ -106,6 +108,8 @@ def ask_ai(details):
 def main(first_run=False):
     def options_1():
         clear_console()
+        EXAMS = {"JLPT": "Japanese-Language Proficiency Test 日本語能力試驗", 
+                "JPT": "Japanese Proficiency Test 日本語能力考試"}
         while True:
             while True:
                 exam = input("Please enter the exam type (JLPT, JPT): ").upper()
@@ -126,11 +130,11 @@ def main(first_run=False):
                     break
             confirm = input("\nAre you sure these options are correct? If yes, just press the Enter key to confirm.")
             if not confirm:
-                return [exam, difficulty]
+                return [EXAMS[exam], difficulty]
             
     clear_console()
     print("Welcome to the Mock Nihongo!\n")
-
+    
     if first_run:
         print("Loaded data successfully.")
         print("==========Info of AI===========")
@@ -147,8 +151,18 @@ def main(first_run=False):
     user_input = input("Please enter your options: ")
     
     if user_input == "1":
-        ask_ai(options_1())
-        
+        temp = ask_ai(options_1())
+        parsed = parse_questions(temp)
+        print(parsed)
+
+        for i in parsed:
+            print(i)
+            for j in i:
+                print(j)
+            print()
+    input()
+    main()
+
 if __name__ == "__main__":
     init_app()
     main(True)
