@@ -57,6 +57,35 @@ def load_api():
         lines = f.readlines()
         API_KEYS = [line.split(": ", 1)[1].strip().replace('"', '') for line in lines]
 
+def del_api():
+    api_file = resource_path(os.path.join("data", "api.txt"))
+    if os.path.exists(api_file):
+        os.remove(api_file)
+        print("API configuration deleted.")
+    else:
+        print("No API configuration found.")
+    input("Press Enter to return...")
+
+def del_questions():
+    folder = resource_path(os.path.join("data", "questions"))
+    files = [f for f in os.listdir(folder) if f.endswith(".csv")]
+    if not files:
+        print("No saved exams to delete.")
+        input("Press Enter to return...")
+        return
+    print("\n--- Saved Exams ---")
+    for i, f in enumerate(files, 1):
+        print(f"{i}. {f}")
+    choice = input("\nSelect exam number to delete (or 'q' to cancel): ")
+    if choice.lower() == 'q':
+        return
+    if not choice.isdigit() or int(choice) < 1 or int(choice) > len(files):
+        return
+    filename = files[int(choice)-1]
+    os.remove(os.path.join(folder, filename))
+    print(f"Deleted {filename}.")
+    input("Press Enter to return...")
+
 def load_saved_exam():
     folder = resource_path(os.path.join("data", "questions"))
     files = [f for f in os.listdir(folder) if f.endswith(".csv")]
@@ -94,17 +123,17 @@ def load_saved_exam():
 
 def ask_ai(details):
     client = OpenAI(api_key=API_KEYS[0], base_url=API_KEYS[1])
-    exam, difficulty = details
+    exam, difficulty, options = details
     if exam == "JLPT":
         struct_info = (
-            "1. Language Knowledge: Kanji (5 q's), Vocabulary (5 q's), Grammar (5 q's)\n"
-            "2. Reading: 1 long passage (5 q's)\n"
-            "3. Listening: 2 dialogue scenarios, 3 questions each (6 q's total)"
+            f"1. Language Knowledge: Kanji ({options["K"]} q's), Vocabulary ({options["V"]} q's), Grammar ({options["G"]} q's)\n"
+            f"2. Reading: {options["RS"][0]} short passages ({options["RS"][1]} q's each), {options["RL"][0]} long passage ({options["RL"][1]} q's)\n"
+            f"3. Listening: {options["L"][0]} dialogue scenarios, {options["L"][1]} questions each ({options["L"][0]*options["L"][1]} q's total)"
         )
     else:
         struct_info = (
-            "1. Listening: 2 dialogue scenarios, 5 questions each (10 q's total)\n"
-            "2. Reading & Grammar: 2 short passages (3 q's each), 1 long passage (5 q's), 10 grammar questions"
+        f"1. Listening: {options["L"][0]} dialogue scenarios, {options["L"][1]} questions each ({options["L"][0]*options["L"][1]} q's total)\n"
+        f"2. Reading & Grammar: {options["RS"][0]} short passages ({options["RS"][1]} q's each), {options["RL"][0]} long passage ({options["RL"][1]} q's), {options["G"][0]} grammar questions"
         )
     prompt = f"""
 You are a professional Japanese teacher. Create a mock {exam} ({difficulty}) exam.
@@ -210,6 +239,59 @@ def start_quiz(questions):
     print(f"Exam Completed! Final Score: {score}/{total}")
     input("Press Enter to return to main menu...")
 
+def generation_settings():
+    while True:
+        type_choice = input("Choose Exam with numbers: [1] JLPT [2] JPT: ")
+        if type_choice in ["1", "2"]:
+            break
+    while True:
+        diff = input("Difficulty (JLPT: N5->N1 // JPT: 315->990): ").upper()
+        if type_choice == "1" and diff in ["N5", "N4", "N3", "N2", "N1"]:
+            break
+        elif type_choice == "2":
+            try:
+                score = int(diff)
+                if 315 <= score <= 990:
+                    break
+            except ValueError:
+                pass
+    if type_choice == "1":
+        exam = "JLPT"
+        options = {"K": 5, "V": 5, "G": 5, "RS": [2, 3], "RL": [1, 5], "L": [2, 5]}
+        opt_keys = ["K", "V", "G", "RS", "RL", "L"]
+    else:
+        exam = "JPT"
+        options = {"G": 10, "RS": [2, 3], "RL": [1, 5], "L": [2, 5]}
+        opt_keys = ["G", "RS", "RL", "L"]
+
+    reply = input("Would you like to customize question distribution? Press Enter to confirm, or type 'n' to skip: ")
+    if reply.lower() == "n":
+        return exam, diff, options
+    keys = {"K": "Please enter number of Kanji questions",
+            "V": "Please enter number of Vocabulary questions",
+            "G": "Please enter number of Grammar questions",
+            "L": [
+                "Please enter number of Listening scenarios (e.g., 2)",
+                "Please enter number of questions per Listening scenario (e.g., 5)",],
+            "RS": [
+                "Please enter number of Short Reading passages (e.g., 2)",
+                "Please enter number of questions per Short Reading passage (e.g., 3)",],
+            "RL": [
+                "Please enter number of Long Reading passages (e.g., 1)",
+                "Please enter number of questions per Long Reading passage (e.g., 5)",],}
+    for key in opt_keys:
+        if key in ["K", "V", "G"]:
+            temp = input(f"{keys[key]} (default {options[key]}): ")
+            if temp.isdigit():
+                options[key] = int(temp)
+        else:
+            temp1 = input(f"{keys[key][0]} (default {options[key][0]}): ")
+            temp2 = input(f"{keys[key][1]} (default {options[key][1]}): ")
+            if temp1.isdigit() and temp2.isdigit():
+                options[key] = [int(temp1), int(temp2)]
+    print("Final options:", options)
+    return exam, diff, options
+
 def main():
     init_app()
     while True:
@@ -217,18 +299,15 @@ def main():
         print("========== Mock Nihongo ===========")
         print("1. Generate New Exam")
         print("2. Load Saved Exam")
-        print("3. Update API Configuration")
-        print("4. Exit")
+        print("3. Delete Saved Exams")
+        print("4. Update API Configuration")
+        print("5. Delete API Configuration")
+        print("6. Exit")
         choice = input("Select an option: ")
         if choice == "1":
-            type_choice = input("Choose Exam: [1] JLPT [2] JPT: ")
-            if type_choice == "1":
-                exam = "JLPT" 
-            else: 
-                exam = "JPT"
-            diff = input("Difficulty (e.g., N2): ").upper()
+            exam, diff, options = generation_settings()
             print("\n> Requesting from AI...")
-            raw_data = ask_ai([exam, diff])
+            raw_data = ask_ai([exam, diff, options])
             match = re.search(r"(\[.*\])", raw_data, re.DOTALL)
             if match:
                 parsed_list = json.loads(match.group(1))
@@ -247,8 +326,12 @@ def main():
         elif choice == "2":
             load_saved_exam()
         elif choice == "3":
-            init_api()
+            del_questions()
         elif choice == "4":
+            init_api()
+        elif choice == "5":
+            del_api()
+        elif choice == "6":
             break
 
 if __name__ == "__main__":
