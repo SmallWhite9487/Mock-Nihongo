@@ -263,33 +263,35 @@ def generation_settings():
         exam = "JPT"
         options = {"G": 10, "RS": [2, 3], "RL": [1, 5], "L": [2, 5]}
         opt_keys = ["G", "RS", "RL", "L"]
-
-    reply = input("Would you like to customize question distribution? Press Enter to confirm, or type 'n' to skip: ")
-    if reply.lower() == "n":
-        return exam, diff, options
-    keys = {"K": "Please enter number of Kanji questions",
-            "V": "Please enter number of Vocabulary questions",
-            "G": "Please enter number of Grammar questions",
-            "L": [
-                "Please enter number of Listening scenarios (e.g., 2)",
-                "Please enter number of questions per Listening scenario (e.g., 5)",],
-            "RS": [
-                "Please enter number of Short Reading passages (e.g., 2)",
-                "Please enter number of questions per Short Reading passage (e.g., 3)",],
-            "RL": [
-                "Please enter number of Long Reading passages (e.g., 1)",
-                "Please enter number of questions per Long Reading passage (e.g., 5)",],}
-    for key in opt_keys:
-        if key in ["K", "V", "G"]:
-            temp = input(f"{keys[key]} (default {options[key]}): ")
-            if temp.isdigit():
-                options[key] = int(temp)
-        else:
-            temp1 = input(f"{keys[key][0]} (default {options[key][0]}): ")
-            temp2 = input(f"{keys[key][1]} (default {options[key][1]}): ")
-            if temp1.isdigit() and temp2.isdigit():
-                options[key] = [int(temp1), int(temp2)]
-    print("Final options:", options)
+    while True:
+        reply = input("Would you like to customize question distribution? Press Enter to confirm, or type 'n' to skip: ")
+        if reply.lower() == "n":
+            return exam, diff, options
+        keys = {"K": "Please enter number of Kanji questions",
+                "V": "Please enter number of Vocabulary questions",
+                "G": "Please enter number of Grammar questions",
+                "L": [
+                    "Please enter number of Listening scenarios (e.g., 2)",
+                    "Please enter number of questions per Listening scenario (e.g., 5)"],
+                "RS": [
+                    "Please enter number of Short Reading passages (e.g., 2)",
+                    "Please enter number of questions per Short Reading passage (e.g., 3)"],
+                "RL": [
+                    "Please enter number of Long Reading passages (e.g., 1)",
+                    "Please enter number of questions per Long Reading passage (e.g., 5)"]}
+        for key in opt_keys:
+            if key in ["K", "V", "G"]:
+                temp = input(f"{keys[key]} (default {options[key]}): ")
+                if temp.isdigit():
+                    options[key] = int(temp)
+            else:
+                temp1 = input(f"{keys[key][0]} (default {options[key][0]}): ")
+                temp2 = input(f"{keys[key][1]} (default {options[key][1]}): ")
+                if temp1.isdigit() and temp2.isdigit():
+                    options[key] = [int(temp1), int(temp2)]
+        confirm = input("Are you sure you want to proceed with these settings? Press Enter to confirm, or type 'n' to re-enter: ")
+        if confirm.lower() != "n":
+            break
     return exam, diff, options
 
 def main():

@@ -5,7 +5,7 @@ A lightweight Python application for generating and practicing mock Japanese exa
 It uses AI to create exam questions, supports listening with audio playback 🎧, and allows saving/loading exams for repeated practice.  
 
 ## Features 🚀  
-- 📝 Generate mock exams (JLPT or JPT) with customizable difficulty.  
+- 📝 Generate mock exams (JLPT or JPT) with customizable difficulty by AI.  
 - 📖 Covers Kanji, Vocabulary, Grammar, Reading, and Listening sections.  
 - 🔊 Listening questions include audio playback.  
 - 💾 Save exams to CSV and reload them later.  
@@ -14,7 +14,7 @@ It uses AI to create exam questions, supports listening with audio playback 🎧
 ## Requirements ⚙️  
 - 🐍 Python 3.9+  
 - Dependencies:  
-    - 🤖 openai  
+    - 🤖 openai (API, Base URL, AI Model)  
     - 🔉 gtts  
     - 🎮 pygame  
     - 📦 Standard libraries: os, sys, json, re, csv, time, datetime  
