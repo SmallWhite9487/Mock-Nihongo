@@ -133,7 +133,7 @@ def ask_ai(details):
     else:
         struct_info = (
         f"1. Listening: {options["L"][0]} dialogue scenarios, {options["L"][1]} questions each ({options["L"][0]*options["L"][1]} q's total)\n"
-        f"2. Reading & Grammar: {options["RS"][0]} short passages ({options["RS"][1]} q's each), {options["RL"][0]} long passage ({options["RL"][1]} q's), {options["G"][0]} grammar questions"
+        f"2. Reading & Grammar: {options["RS"][0]} short passages ({options["RS"][1]} q's each), {options["RL"][0]} long passage ({options["RL"][1]} q's), {options["G"]} grammar questions"
         )
     prompt = f"""
 You are a professional Japanese teacher. Create a mock {exam} ({difficulty}) exam.
@@ -157,7 +157,7 @@ IMPORTANT: Output ONLY the raw JSON array.
             messages=[{"role": "system", "content": "You are a specialized Japanese exam generator that outputs pure JSON."},
                         {"role": "user", "content": prompt}],
             temperature=0.3,
-            timeout=180.0)
+            timeout=120.0)
         return completion.choices[0].message.content
     except Exception as e:
         print(f"\n[!] AI request failed: {e}")
@@ -294,6 +294,24 @@ def generation_settings():
             break
     return exam, diff, options
 
+def json2csv():
+    raw_data = input("Paste the raw JSON data here: ")
+    exam = input("Exam type (e.g., JLPT): ")
+    diff = input("Difficulty level (e.g., N5): ")
+    match = re.search(r"(\[.*\])", raw_data, re.DOTALL)
+    if match:
+        parsed_list = json.loads(match.group(1))
+        filename = f"{exam}_{diff}_{datetime.now().strftime("%H%M%S")}_Custom.csv"
+        save_path = resource_path(os.path.join("data", "questions", filename))
+        with open(save_path, "w", encoding="utf-8-sig", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Section", "Content", "Question", "Options", "Answer", "Note"])
+            for item in parsed_list:
+                writer.writerow([
+                    item.get("section"), item.get("content"), item.get("question"),
+                    json.dumps(item.get("options", ["N/A"]*4)), item.get("answer"), item.get("note")
+                ])
+
 def main():
     init_app()
     while True:
@@ -304,7 +322,8 @@ def main():
         print("3. Delete Saved Exams")
         print("4. Update API Configuration")
         print("5. Delete API Configuration")
-        print("6. Exit")
+        print("6. Convert Raw JSON to CSV")
+        print("7. Exit")
         choice = input("Select an option: ")
         if choice == "1":
             exam, diff, options = generation_settings()
@@ -334,6 +353,8 @@ def main():
         elif choice == "5":
             del_api()
         elif choice == "6":
+            json2csv()
+        elif choice == "7":
             break
 
 if __name__ == "__main__":
