@@ -8,8 +8,7 @@ import time
 from datetime import datetime
 from gtts import gTTS
 import pygame
-
-pygame.mixer.init()
+from wcwidth import wcswidth
 
 def resource_path(path):
     if hasattr(sys, "_MEIPASS"):
@@ -36,6 +35,7 @@ def play_audio(text, lang="ja"):
         print(f"\n[!] Audio playback error: {e}")
 
 def init_app():
+    pygame.mixer.init()
     os.makedirs(resource_path("data"), exist_ok=True)
     os.makedirs(resource_path(os.path.join("data", "questions")), exist_ok=True)
     api_file = resource_path(os.path.join("data", "api.txt"))
@@ -312,18 +312,42 @@ def json2csv():
                     json.dumps(item.get("options", ["N/A"]*4)), item.get("answer"), item.get("note")
                 ])
 
-def main():
-    init_app()
+def switch_language():
+    options = ["简体中文", "繁體中文", "English"]
     while True:
         clear_console()
-        print("========== Mock Nihongo ===========")
-        print("1. Generate New Exam")
-        print("2. Load Saved Exam")
-        print("3. Delete Saved Exams")
-        print("4. Update API Configuration")
-        print("5. Delete API Configuration")
-        print("6. Convert Raw JSON to CSV")
-        print("7. Exit")
+        print_options("Available Languages", options, 4)
+        choice = input("Enter language code to switch (or 'q' to cancel): ")
+        if choice == "1":
+            print("语言已切换到简体中文。")
+            break
+        elif choice == "2":
+            print("語言已切換到繁體中文。")
+            break
+        elif choice == "3":
+            print("Language switched to English.")
+            break
+        if choice.lower() == "q":
+            return
+    input()
+
+def print_options(title, options, w=16):
+    title = f"{'=' * w} {title} {'=' * w}"
+    print(title)
+    for i, o in enumerate(options, start=1):
+        if isinstance(o, list):
+            temp = f"| {o[0]}: {o[1]}"
+        else:
+            temp = f"| {i}. {o}"
+        pad_len = (len(title) - 1) - wcswidth(temp)
+        print(temp + " " * pad_len + "|")
+    print(title)
+
+def main():
+    while True:
+        clear_console()
+        options = ["Generate New Exam", "Load Saved Exam", "Delete Saved Exams", "Update API Configuration", "Delete API Configuration", "Convert Raw JSON to CSV", "Switch Language", "Exit"]
+        print_options("Mock Nihongo", options)
         choice = input("Select an option: ")
         if choice == "1":
             exam, diff, options = generation_settings()
@@ -355,7 +379,10 @@ def main():
         elif choice == "6":
             json2csv()
         elif choice == "7":
+            switch_language()
+        elif choice == "8":
             break
 
 if __name__ == "__main__":
+    init_app()
     main()
